@@ -96,3 +96,64 @@ Dans le contexte du projet churn, cette approche permet de passer d'un modèle
 local, difficile à suivre, à un pipeline de production plus structuré et plus
 fiable. C'est la base du MLOps moderne : automatiser, tracer et contrôler
 chaque étape du cycle de vie du modèle.
+
+## 9. Pourquoi le TP4 est-il un vrai exercice de déploiement ?
+
+Le TP4 passe de la phase d'expérimentation à la phase de mise en production.
+Le modèle n'est plus seulement entraîné puis évalué localement : il est
+chargé depuis MLflow, servi via une API REST, et exposé pour des prédictions
+réelles. C'est le cœur du MLOps : transformer un modèle de notebook en un
+service exploitable par d'autres applications.
+
+L'API FastAPI permet de rendre le modèle accessible par HTTP, avec une
+validation automatique des entrées grâce à Pydantic. Cela garantit que les
+données envoyées au modèle respectent le bon format, ce qui réduit les erreurs
+et facilite l'intégration côté client.
+
+## 10. Quel est le rôle du point d'entrée /predict ?
+
+Le point d'entrée `/predict` reçoit un client au format JSON et le transforme
+en DataFrame exploitable par le modèle. Les colonnes sont ensuite encodées de
+la même manière que pendant l'entraînement, puis on réordonne les variables
+pour correspondre exactement au modèle attendu.
+
+Cette étape est cruciale : un mauvais ordre des colonnes ou une mauvaise
+conversion des catégories peut empêcher le modèle de prédire correctement.
+C'est précisément là que la reproductibilité du pipeline de données prend toute
+sa valeur.
+
+## 11. Pourquoi le modèle ne doit-il pas être chargé à partir d'un fichier local ?
+
+Le chargement depuis `model.pkl` ou depuis un notebook local est fragile car le
+modèle peut être écrasé, perdu, ou ne pas correspondre au bon essai. En
+revanche, MLflow permet d'accéder à la version exacte du modèle enregistrée et
+validée dans le registre.
+
+Le choix de `models:/churn-model@champion` est une bonne pratique de
+production, car il sépare le service de l'implémentation technique du modèle.
+Le code de l'API ne dépend pas d'un fichier physique ; il dépend d'une version
+de référence clairement identifiée.
+
+## 12. Comment le service devient-il robuste et maintenable ?
+
+Plusieurs éléments rendent l'API plus fiable :
+
+- validation des entrées par Pydantic ;
+- point d'état `/health` pour vérifier le bon fonctionnement du service ;
+- déclaration explicite du modèle champion dans le registre MLflow ;
+- séparation claire entre entraînement, enregistrement et prédiction.
+
+Cela permet de surveiller le service, de comprendre les erreurs rapidement et
+de remplacer facilement le modèle sans modifier l'API si la logique de
+consommation reste identique.
+
+## 13. Bilan du TP4
+
+Le TP4 montre la transition d'un projet de science des données vers un projet
+MLOps complet. L'entraînement, la comparaison, la mise en registre et le
+déploiement du modèle sont maintenant reliés dans un même flux cohérent.
+
+Le point important est que le modèle n'est plus un simple artefact local : il
+est versionné, référencé, déployé et consommé comme un service. C'est cette
+architecture qui permet de passer d'un prototype à une solution opérationnelle,
+robuste, traçable et facile à faire évoluer.
