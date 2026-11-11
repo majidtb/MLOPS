@@ -33,3 +33,66 @@ Limites : le dossier `venv/` et le fichier `model.pkl` ne sont pas dans le
 dépôt. Le camarade doit recréer son environnement virtuel, réinstaller les
 bibliothèques (idéalement avec les mêmes versions) et réentraîner le modèle.
 Le problème « ça marche chez moi » n'est donc que partiellement résolu.
+
+## 4. Pourquoi MLflow est-il utile au TP3 ?
+
+MLflow apporte la traçabilité des expériences et la reproductibilité des modèles.
+Dans notre projet, chaque essai est enregistré dans un run avec ses paramètres,
+les métriques (accuracy, precision, recall, f1) et le modèle entraîné. Cela
+permet de comparer les essais de manière objective, sans dépendre uniquement de
+la mémoire du développeur ou des fichiers locaux.
+
+Sans MLflow, il serait difficile de retrouver rapidement quel modèle a été
+entraîné avec quelles hyperparamètres, sur quels jeux de données, et avec
+quelle performance. Le tracking transforme la recherche expérimentale en un
+historique exploitable.
+
+## 5. Comment le meilleur modèle est-il sélectionné ?
+
+Le choix du meilleur modèle se fait à partir des métriques enregistrées dans
+MLflow. Dans le script de training, chaque run logue le score F1, ainsi que
+l'accuracy et les autres mesures. Ensuite, on peut trier les runs selon
+`metrics.f1 DESC` pour repérer le meilleur modèle.
+
+Cette étape est importante car elle permet de formaliser la décision : le
+modèle n'est plus choisi au hasard, mais selon une métrique de performance
+clairement définie. Dans notre cas, le choix du meilleur modèle reste
+sensiblement stable si les données sont bien préparées, même si la base de
+churn a une fuite de données qui peut artificiellement améliorer les scores.
+
+## 6. Qu'est-ce que le registre de modèles et l'alias champion ?
+
+Le registre de modèles permet de versionner les modèles comme des artefacts
+pérénisés. Le script `register_model.py` enregistre le meilleur run sous le
+nom `churn-model`, puis lui attribue un alias `champion`.
+
+Cela est très utile en production : on peut déployer un modèle connu, le
+définir comme référence, et le remplacer plus tard par une autre version en
+gardant la trace de l'historique. L'alias `champion` sert de point d'entrée
+stable pour l'application et évite de dépendre d'un identifiant de version qui
+peut changer.
+
+## 7. Pourquoi charger un modèle via son alias est-il intéressant ?
+
+Le chargement d'un modèle via `models:/churn-model@champion` rend le pipeline
+plus robuste. L'API ne dépend plus d'un run local ou d'un fichier `model.pkl` 
+qui peut être écrasé. Elle charge explicitement la version actuellement
+désignée comme champion dans le registre MLflow.
+
+Ceci correspond à une bonne pratique MLOps : la production pointe vers une
+version explicitement validée, et les changements de modèle passent par un
+contrôle clair. Cela améliore la traçabilité, la reproductibilité et la
+qualité de la livraison.
+
+## 8. Bilan du TP3
+
+Le TP3 montre l'importance du monitoring et de la gestion de modèles dans un
+projet de machine learning. MLflow ne sert pas seulement à enregistrer des
+résultats : il offre une infrastructure complète pour suivre les expériences,
+stocker les artefacts, comparer les performances et déployer des modèles de
+façon reproductible.
+
+Dans le contexte du projet churn, cette approche permet de passer d'un modèle
+local, difficile à suivre, à un pipeline de production plus structuré et plus
+fiable. C'est la base du MLOps moderne : automatiser, tracer et contrôler
+chaque étape du cycle de vie du modèle.
